@@ -3,5 +3,5 @@ embeddeds/haskell/dist
 # Python
 *.py[cod]
 
-
+externals/langium/ArduinoML/node_modules
 
