@@ -1,7 +1,6 @@
 embeddeds/haskell/dist
+node_modules/
+.idea
 
 # Python
 *.py[cod]
-
-externals/langium/ArduinoML/node_modules
-
