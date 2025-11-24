@@ -5,11 +5,11 @@ entry App:
 	'{'
 		'bricks'
 		bricks+=Brick
-		(bricks+=Brick)* 
-		
+		(bricks+=Brick)*
+
 		'states'
 		states+=State
-		( states+=State)* 		
+		( states+=State)*
 	'}';
 
 Brick :
@@ -22,14 +22,22 @@ Actuator:
 Sensor :
 	{infer Sensor}
 	'Sensor'  name=ID ':' inputPin=INT;
-	
-State :
-	name=ID '{'
-		actions+=Action
-		(actions+=Action)* 
-		expression=Expression
-	'}';
 
+State:
+    NormalState | ErrorState
+;
+
+NormalState:
+    name=ID '{'
+        actions+=Action*
+        expression=Expression
+    '}'
+;
+
+ErrorState:
+    'error' code=INT '{'
+    '}'
+;
 
 Action :
 	actuator=[Actuator:ID] '<=' value=Signal;
