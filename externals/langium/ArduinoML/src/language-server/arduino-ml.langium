@@ -48,7 +48,7 @@ Condition :
     sensor=[Sensor:ID] 'is' value=Signal;
 
 Transition :
-    '=>' next=[State:ID];
+	sensor=[Sensor:ID] 'is' value=Signal '=>' next=[State:ID];
 
 Signal:
     value=(HIGH | LOW);

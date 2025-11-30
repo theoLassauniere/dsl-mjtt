@@ -9,7 +9,10 @@ export function registerValidationChecks(services: ArduinoMlServices) {
     const registry = services.validation.ValidationRegistry;
     const validator = services.validation.ArduinoMlValidator;
     const checks: ValidationChecks<ArduinoMlAstType> = {
-        App: validator.checkNothing
+        App: [
+            validator.checkNothing,
+            validator.checkActuatorsExist
+        ]
     };
     registry.register(checks, validator);
 }
@@ -27,5 +30,31 @@ export class ArduinoMlValidator {
             }
         }
     }
+    checkActuatorsExist(app: App, accept: ValidationAcceptor): void {
+    for (const state of app.states) {
+        // Moore actions
+        if (state.actions) {
+            for (const action of state.actions) {
+                if (!action.actuator.ref) {
+                    accept('error', `Actuator '${action.actuator.$refText}' is not declared.`, {
+                        node: action,
+                        property: 'actuator'
+                    });
+                }
+            }
+        }
 
+        // Mealy actions
+        if (state.transition && state.transition.actions) {
+            for (const action of state.transition.actions) {
+                if (!action.actuator.ref) {
+                    accept('error', `Actuator '${action.actuator.$refText}' is not declared in transition.`, {
+                        node: action,
+                        property: 'actuator'
+                    });
+                }
+            }
+        }
+    }
+}
 }

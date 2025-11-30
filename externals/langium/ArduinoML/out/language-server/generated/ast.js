@@ -129,6 +129,14 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
                     ]
                 };
             }
+            case 'Transition': {
+                return {
+                    name: 'Transition',
+                    mandatory: [
+                        { name: 'actions', type: 'array' }
+                    ]
+                };
+            }
             default: {
                 return {
                     name: type,
