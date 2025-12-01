@@ -113,16 +113,18 @@ long `+brick.name+`LastDebounceTime = 0;
 
     function generateAnd(expression: Expression, fileNode:CompositeGeneratorNode) {
         fileNode.append(`
-            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) && (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard)  {
+            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) && (digitalRead(`+expression.right.sensor.ref?.inputPin+`) == `+expression.right.value.value+` && `+expression.right.sensor.ref?.name+`BounceGuard)  {
                 `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
+                `+expression.right.sensor.ref?.name+`LastDebounceTime = millis();
                 currentState = `+expression.transition.next.ref?.name+`;
         `);
     }
 
     function generateOr(expression: Expression, fileNode:CompositeGeneratorNode) {
         fileNode.append(`
-            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) || (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard)  {
+            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) || (digitalRead(`+expression.right.sensor.ref?.inputPin+`) == `+expression.right.value.value+` && `+expression.right.sensor.ref?.name+`BounceGuard)  {
                 `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
+                `+expression.right.sensor.ref?.name+`LastDebounceTime = millis();
                 currentState = `+expression.transition.next.ref?.name+`;
         `);
     }
