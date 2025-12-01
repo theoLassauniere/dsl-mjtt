@@ -9,7 +9,8 @@ import {
     Expression, OrExpression,
     Sensor,
     State,
-    Transition
+    Transition,
+    ErrorState
 } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 
@@ -79,9 +80,9 @@ long `+brick.name+`LastDebounceTime = 0;
 	`,NL);
     }
 
-	function isErrorState(state: State): state is any {
-		return "code" in state;
-	}
+	function isErrorState(state: State): state is ErrorState {
+        return (state as any).code !== undefined;
+    }
 
 	function compileActuator(actuator: Actuator, fileNode: CompositeGeneratorNode) {
         fileNode.append(`
@@ -94,42 +95,42 @@ long `+brick.name+`LastDebounceTime = 0;
 	}
 
     function compileState(state: State, fileNode: CompositeGeneratorNode) {
-		const stateName = isErrorState(state)
-			? `error${state.code}`
-			: state.name;
 
-		fileNode.append(`
-					case ${stateName}:`)
+        const stateName = isErrorState(state)
+            ? `error${state.code}`
+            : state.name;
 
-		if (isErrorState(state)) {
-			const code = state.code;
-			fileNode.append(`
-				while(true) {
-					// répéter 'code' fois HIGH/LOW
-					for(int i = 0; i < ${code}; i++) {
-						digitalWrite(12, HIGH);
-						delay(500);
-						digitalWrite(12, LOW);
-						delay(500);
-					}
-					delay(${code} * 500);
-				}`)
-			fileNode.append(`
-				break;`)
-			return;
-		}
+        fileNode.append(`
+                    case ${stateName}:`);
 
-		for (const action of state.actions) {
-			compileAction(action, fileNode);
-		}
+        if (isErrorState(state)) {
+            const code = state.code;
+            fileNode.append(`
+                while(true) {
+                    for(int i = 0; i < ${code}; i++) {
+                        digitalWrite(12, HIGH);
+                        delay(500);
+                        digitalWrite(12, LOW);
+                        delay(500);
+                    }
+                    delay(${code} * 500);
+                }`);
+            fileNode.append(`
+                    break;`);
+            return;
+        }
 
-		if (state.expression !== null){
-			compileExpression(state.expression, fileNode);
-		}
+        for (const action of state.actions) {
+            compileAction(action, fileNode);
+        }
 
-		fileNode.append(`
-					break;`)
-	}
+        if (state.expression) {
+            compileExpression(state.expression, fileNode);
+        }
+
+        fileNode.append(`
+                    break;`);
+    }
 
 
     function compileAction(action: Action, fileNode:CompositeGeneratorNode) {
@@ -149,9 +150,18 @@ long `+brick.name+`LastDebounceTime = 0;
     }
 
     function generateTransitionCode(transition: Transition) {
+        const nextState = stateName(transition.next.ref!);
+
         return `
-            currentState = `+transition.next.ref?.name+`;
+            currentState = ${nextState};
         `;
+    }
+
+    function stateName(state: State): string {
+        if (isErrorState(state)) {
+            return `error${state.code}`;
+        }
+        return (state as any).name;
     }
 
     function generateCondition(expr: Expression): string {

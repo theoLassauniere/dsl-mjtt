@@ -27,9 +27,13 @@ function compile(app, fileNode) {
 // Application name: ` + app.name + `
 
 long debounce = 200;
-enum STATE {` + app.states.map(s => s.name).join(', ') + `};
+enum STATE {
+    ` + app.states.map(s => isErrorState(s) ? `error${s.code}` : s.name).join(', ') + `
+};
 
-STATE currentState = ` + ((_a = app.initial.ref) === null || _a === void 0 ? void 0 : _a.name) + `;`, langium_1.NL);
+STATE currentState = ` + (isErrorState(app.initial.ref)
+        ? `error${app.initial.ref.code}`
+        : (_a = app.initial.ref) === null || _a === void 0 ? void 0 : _a.name) + `;`, langium_1.NL);
     for (const brick of app.bricks) {
         if ("inputPin" in brick) {
             fileNode.append(`
@@ -61,6 +65,9 @@ long ` + brick.name + `LastDebounceTime = 0;
 	}
 	`, langium_1.NL);
 }
+function isErrorState(state) {
+    return state.code !== undefined;
+}
 function compileActuator(actuator, fileNode) {
     fileNode.append(`
 		pinMode(` + actuator.outputPin + `, OUTPUT); // ` + actuator.name + ` [Actuator]`);
@@ -70,16 +77,35 @@ function compileSensor(sensor, fileNode) {
 		pinMode(` + sensor.inputPin + `, INPUT); // ` + sensor.name + ` [Sensor]`);
 }
 function compileState(state, fileNode) {
+    const stateName = isErrorState(state)
+        ? `error${state.code}`
+        : state.name;
     fileNode.append(`
-				case ` + state.name + `:`);
+                    case ${stateName}:`);
+    if (isErrorState(state)) {
+        const code = state.code;
+        fileNode.append(`
+                while(true) {
+                    for(int i = 0; i < ${code}; i++) {
+                        digitalWrite(12, HIGH);
+                        delay(500);
+                        digitalWrite(12, LOW);
+                        delay(500);
+                    }
+                    delay(${code} * 500);
+                }`);
+        fileNode.append(`
+                    break;`);
+        return;
+    }
     for (const action of state.actions) {
         compileAction(action, fileNode);
     }
-    if (state.expression !== null) {
+    if (state.expression) {
         compileExpression(state.expression, fileNode);
     }
     fileNode.append(`
-				break;`);
+                    break;`);
 }
 function compileAction(action, fileNode) {
     var _a;
@@ -96,10 +122,16 @@ function compileExpression(expression, fileNode) {
             `);
 }
 function generateTransitionCode(transition) {
-    var _a;
+    const nextState = stateName(transition.next.ref);
     return `
-            currentState = ` + ((_a = transition.next.ref) === null || _a === void 0 ? void 0 : _a.name) + `;
+            currentState = ${nextState};
         `;
+}
+function stateName(state) {
+    if (isErrorState(state)) {
+        return `error${state.code}`;
+    }
+    return state.name;
 }
 function generateCondition(expr) {
     if (expr.$type === 'Condition') {

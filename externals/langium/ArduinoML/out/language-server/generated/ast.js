@@ -4,7 +4,7 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reflection = exports.ArduinoMlAstReflection = exports.isOrExpression = exports.OrExpression = exports.isCondition = exports.Condition = exports.isAndExpression = exports.AndExpression = exports.isTransition = exports.Transition = exports.isState = exports.State = exports.isSignal = exports.Signal = exports.isSensor = exports.Sensor = exports.isOperator = exports.Operator = exports.isExpression = exports.Expression = exports.isApp = exports.App = exports.isActuator = exports.Actuator = exports.isAction = exports.Action = exports.isBrick = exports.Brick = void 0;
+exports.reflection = exports.ArduinoMlAstReflection = exports.isOrExpression = exports.OrExpression = exports.isCondition = exports.Condition = exports.isAndExpression = exports.AndExpression = exports.isTransition = exports.Transition = exports.isSignal = exports.Signal = exports.isSensor = exports.Sensor = exports.isOperator = exports.Operator = exports.isNormalState = exports.NormalState = exports.isExpression = exports.Expression = exports.isErrorState = exports.ErrorState = exports.isApp = exports.App = exports.isActuator = exports.Actuator = exports.isAction = exports.Action = exports.isState = exports.State = exports.isBrick = exports.Brick = void 0;
 /* eslint-disable */
 const langium_1 = require("langium");
 exports.Brick = 'Brick';
@@ -12,6 +12,11 @@ function isBrick(item) {
     return exports.reflection.isInstance(item, exports.Brick);
 }
 exports.isBrick = isBrick;
+exports.State = 'State';
+function isState(item) {
+    return exports.reflection.isInstance(item, exports.State);
+}
+exports.isState = isState;
 exports.Action = 'Action';
 function isAction(item) {
     return exports.reflection.isInstance(item, exports.Action);
@@ -27,11 +32,21 @@ function isApp(item) {
     return exports.reflection.isInstance(item, exports.App);
 }
 exports.isApp = isApp;
+exports.ErrorState = 'ErrorState';
+function isErrorState(item) {
+    return exports.reflection.isInstance(item, exports.ErrorState);
+}
+exports.isErrorState = isErrorState;
 exports.Expression = 'Expression';
 function isExpression(item) {
     return exports.reflection.isInstance(item, exports.Expression);
 }
 exports.isExpression = isExpression;
+exports.NormalState = 'NormalState';
+function isNormalState(item) {
+    return exports.reflection.isInstance(item, exports.NormalState);
+}
+exports.isNormalState = isNormalState;
 exports.Operator = 'Operator';
 function isOperator(item) {
     return exports.reflection.isInstance(item, exports.Operator);
@@ -47,11 +62,6 @@ function isSignal(item) {
     return exports.reflection.isInstance(item, exports.Signal);
 }
 exports.isSignal = isSignal;
-exports.State = 'State';
-function isState(item) {
-    return exports.reflection.isInstance(item, exports.State);
-}
-exports.isState = isState;
 exports.Transition = 'Transition';
 function isTransition(item) {
     return exports.reflection.isInstance(item, exports.Transition);
@@ -74,13 +84,17 @@ function isOrExpression(item) {
 exports.isOrExpression = isOrExpression;
 class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
     getAllTypes() {
-        return ['Action', 'Actuator', 'AndExpression', 'App', 'Brick', 'Condition', 'Expression', 'Operator', 'OrExpression', 'Sensor', 'Signal', 'State', 'Transition'];
+        return ['Action', 'Actuator', 'AndExpression', 'App', 'Brick', 'Condition', 'ErrorState', 'Expression', 'NormalState', 'Operator', 'OrExpression', 'Sensor', 'Signal', 'State', 'Transition'];
     }
     computeIsSubtype(subtype, supertype) {
         switch (subtype) {
             case exports.Actuator:
             case exports.Sensor: {
                 return this.isSubtype(exports.Brick, supertype);
+            }
+            case exports.ErrorState:
+            case exports.NormalState: {
+                return this.isSubtype(exports.State, supertype);
             }
             case exports.AndExpression:
             case exports.Condition:
@@ -121,9 +135,9 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
                     ]
                 };
             }
-            case 'State': {
+            case 'NormalState': {
                 return {
-                    name: 'State',
+                    name: 'NormalState',
                     mandatory: [
                         { name: 'actions', type: 'array' }
                     ]

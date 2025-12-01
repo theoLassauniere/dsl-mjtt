@@ -1,4 +1,4 @@
-app RedButton initial state off {
+app VerySimpleAlarm initial state off {
 	bricks
 		Actuator led : 12
         Actuator buzzer : 11

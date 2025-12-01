@@ -35,14 +35,14 @@ export class ArduinoMlValidator {
             accept('error', 'Error states cannot contain actions.', { node: state });
         }
 
-        if ((state as any).transition) {
-            accept('error', 'Error states cannot have transitions.', { node: state });
+        if ((state as any).expression) {
+            accept('error', 'Error states cannot have expression.', { node: state });
         }
     }
 
     checkNormalState(state: NormalState, accept: ValidationAcceptor): void {
-        if (!state.transition) {
-            accept('error', 'Normal states must define a transition.', { node: state });
+        if (!state.expression) {
+            accept('error', 'Normal states must define an expression.', { node: state });
         }
     }
 }
