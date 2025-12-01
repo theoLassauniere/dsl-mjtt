@@ -10,7 +10,7 @@ app DualCheck initial state off {
 	states
 		off {
 			red_led <= LOW
-			button1 is HIGH and button2 is HIGH and button3 is HIGH and button4 is HIGH or button5 => on
+			button1 is HIGH and button2 is HIGH and button3 is HIGH and button4 is HIGH or button5 is HIGH => on
 		}
 		on {
 			red_led <= HIGH
