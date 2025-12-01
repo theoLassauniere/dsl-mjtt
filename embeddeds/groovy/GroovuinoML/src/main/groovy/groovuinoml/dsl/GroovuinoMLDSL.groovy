@@ -29,7 +29,7 @@ class GroovuinoMLDSL {
 		def secure = new SecureASTCustomizer()
 		secure.with {
 			//disallow closure creation
-			closuresAllowed = true
+			closuresAllowed = false
 			//disallow method definitions
 			methodDefinitionAllowed = true
 			//empty white list => forbid imports
