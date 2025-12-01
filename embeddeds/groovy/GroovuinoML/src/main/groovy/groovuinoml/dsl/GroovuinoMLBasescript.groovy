@@ -9,6 +9,9 @@ import io.github.mosser.arduinoml.kernel.structural.Sensor
 import io.github.mosser.arduinoml.kernel.structural.SIGNAL
 
 abstract class GroovuinoMLBasescript extends Script {
+//	public static Number getDuration(Number number, TimeUnit unit) throws IOException {
+//		return number * unit.inMillis;
+//	}
 
     // sensor "name" pin n
     def sensor(String name) {
@@ -52,18 +55,34 @@ abstract class GroovuinoMLBasescript extends Script {
                         [and: closure]
                     }
             ]
+        }[means: closure]
+	}
+
+    def errorState(String name, int times, String actuatorName = "errorLed") {
+        List<Action> actions = new ArrayList<Action>()
+
+        // récupère l'actuator par son nom depuis le binding
+        Actuator actuator = (Actuator) ((GroovuinoMLBinding) this.getBinding()).getVariable(actuatorName)
+
+        // on ajoute 2 * times actions: HIGH puis LOW pour chaque blink
+        times.times {
+            Action on = new Action()
+            on.setActuator(actuator)
+            on.setValue(SIGNAL.HIGH)
+            actions.add(on)
+
+            Action off = new Action()
+            off.setActuator(actuator)
+            off.setValue(SIGNAL.LOW)
+            actions.add(off)
         }
 
-        [means: closure]
+        ((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel().createState(name, actions)
     }
 
-    // initial state
-    def initial(state) {
-        ((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel()
-                .setInitialState(
-                        state instanceof String
-                                ? (State) ((GroovuinoMLBinding) this.getBinding()).getVariable(state)
-                                : (State) state
+	// initial state
+	def initial(state) {
+		((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel().setInitialState(state instanceof String ? (State)((GroovuinoMLBinding)this.getBinding()).getVariable(state) : (State)state
                 )
     }
 
