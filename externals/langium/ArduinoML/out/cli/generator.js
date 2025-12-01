@@ -91,12 +91,17 @@ function compileExpression(expression, fileNode) {
     const conditionCode = generateCondition(expression.condition);
     fileNode.append(`
                 if (${conditionCode}) {
-                    ${generateTransitionCode(expression.transition)}
+                    ${generateTransitionCode(expression.transition, fileNode)}
                 }
             `);
 }
-function generateTransitionCode(transition) {
+function generateTransitionCode(transition, fileNode) {
     var _a;
+    if (transition.mealyActions && transition.mealyActions.length > 0) {
+        for (const action of transition.mealyActions) {
+            compileAction(action, fileNode);
+        }
+    }
     return `
             currentState = ` + ((_a = transition.next.ref) === null || _a === void 0 ? void 0 : _a.name) + `;
         `;

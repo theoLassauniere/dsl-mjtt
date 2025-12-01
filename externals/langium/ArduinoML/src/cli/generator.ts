@@ -108,12 +108,17 @@ long `+brick.name+`LastDebounceTime = 0;
 
         fileNode.append(`
                 if (${conditionCode}) {
-                    ${generateTransitionCode(expression.transition)}
+                    ${generateTransitionCode(expression.transition, fileNode)}
                 }
             `);
     }
 
-    function generateTransitionCode(transition: Transition) {
+    function generateTransitionCode(transition: Transition, fileNode: CompositeGeneratorNode): string {
+		if (transition.mealyActions && transition.mealyActions.length > 0) {
+			for (const action of transition.mealyActions) {
+				compileAction(action, fileNode);
+			}
+		}
         return `
             currentState = `+transition.next.ref?.name+`;
         `;

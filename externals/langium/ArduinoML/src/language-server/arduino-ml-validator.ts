@@ -45,8 +45,8 @@ export class ArduinoMlValidator {
         }
 
         // Mealy actions
-        if (state.transition && state.transition.actions) {
-            for (const action of state.transition.actions) {
+        if (state.expression.transition && state.expression.transition.mealyActions) {
+            for (const action of state.actions) {
                 if (!action.actuator.ref) {
                     accept('error', `Actuator '${action.actuator.$refText}' is not declared in transition.`, {
                         node: action,
