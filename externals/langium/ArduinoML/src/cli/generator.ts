@@ -112,6 +112,7 @@ long `+brick.name+`LastDebounceTime = 0;
 	}
 
     function generateAnd(expression: Expression, fileNode:CompositeGeneratorNode) {
+        if (expression.right)
         fileNode.append(`
             if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) && (digitalRead(`+expression.right.sensor.ref?.inputPin+`) == `+expression.right.value.value+` && `+expression.right.sensor.ref?.name+`BounceGuard)  {
                 `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
@@ -121,6 +122,7 @@ long `+brick.name+`LastDebounceTime = 0;
     }
 
     function generateOr(expression: Expression, fileNode:CompositeGeneratorNode) {
+        if (expression.right)
         fileNode.append(`
             if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) || (digitalRead(`+expression.right.sensor.ref?.inputPin+`) == `+expression.right.value.value+` && `+expression.right.sensor.ref?.name+`BounceGuard)  {
                 `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
