@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, NL, toString } from 'langium';
 import path from 'path';
-import { Action, Actuator, App, Sensor, State, Transition } from '../language-server/generated/ast';
+import {Action, Actuator, App, Expression, Sensor, State} from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 
 export function generateInoFile(app: App, filePath: string, destination: string | undefined): string {
@@ -63,10 +63,6 @@ long `+brick.name+`LastDebounceTime = 0;
 		}
 	}
 	`,NL);
-
-
-
-
     }
 
 	function compileActuator(actuator: Actuator, fileNode: CompositeGeneratorNode) {
@@ -85,8 +81,8 @@ long `+brick.name+`LastDebounceTime = 0;
 		for(const action of state.actions){
 			compileAction(action, fileNode)
 		}
-		if (state.transition !== null){
-			compileTransition(state.transition, fileNode)
+		if (state.expression !== null){
+			compileExpression(state.expression, fileNode)
 		}
 		fileNode.append(`
 				break;`)
@@ -98,13 +94,36 @@ long `+brick.name+`LastDebounceTime = 0;
 					digitalWrite(`+action.actuator.ref?.outputPin+`,`+action.value.value+`);`)
 	}
 
-	function compileTransition(transition: Transition, fileNode:CompositeGeneratorNode) {
-		fileNode.append(`
-		 			`+transition.sensor.ref?.name+`BounceGuard = millis() - `+transition.sensor.ref?.name+`LastDebounceTime > debounce;
-					if( digitalRead(`+transition.sensor.ref?.inputPin+`) == `+transition.value.value+` && `+transition.sensor.ref?.name+`BounceGuard) {
-						`+transition.sensor.ref?.name+`LastDebounceTime = millis();
-						currentState = `+transition.next.ref?.name+`;
+	function compileExpression(expression: Expression, fileNode:CompositeGeneratorNode) {
+        fileNode.append(`
+		 			`+expression.left.sensor.ref?.name+`BounceGuard = millis() - `+expression.left.sensor.ref?.name+`LastDebounceTime > debounce;
+        `);
+		if (!expression.operator) {
+            // Comme avant
+            fileNode.append(`
+					if( digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) {
+						`+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
+						currentState = `+expression.transition.next.ref?.name+`;
 					}
-		`)
+		`);
+        } else {
+            expression.operator.value === 'and' ? generateAnd(expression, fileNode) : generateOr(expression, fileNode);
+        }
 	}
+
+    function generateAnd(expression: Expression, fileNode:CompositeGeneratorNode) {
+        fileNode.append(`
+            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) && (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard)  {
+                `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
+                currentState = `+expression.transition.next.ref?.name+`;
+        `);
+    }
+
+    function generateOr(expression: Expression, fileNode:CompositeGeneratorNode) {
+        fileNode.append(`
+            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) || (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard)  {
+                `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
+                currentState = `+expression.transition.next.ref?.name+`;
+        `);
+    }
 

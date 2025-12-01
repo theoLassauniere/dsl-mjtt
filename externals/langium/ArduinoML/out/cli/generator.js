@@ -75,8 +75,8 @@ function compileState(state, fileNode) {
     for (const action of state.actions) {
         compileAction(action, fileNode);
     }
-    if (state.transition !== null) {
-        compileTransition(state.transition, fileNode);
+    if (state.expression !== null) {
+        compileExpression(state.expression, fileNode);
     }
     fileNode.append(`
 				break;`);
@@ -86,14 +86,38 @@ function compileAction(action, fileNode) {
     fileNode.append(`
 					digitalWrite(` + ((_a = action.actuator.ref) === null || _a === void 0 ? void 0 : _a.outputPin) + `,` + action.value.value + `);`);
 }
-function compileTransition(transition, fileNode) {
+function compileExpression(expression, fileNode) {
     var _a, _b, _c, _d, _e, _f;
     fileNode.append(`
-		 			` + ((_a = transition.sensor.ref) === null || _a === void 0 ? void 0 : _a.name) + `BounceGuard = millis() - ` + ((_b = transition.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `LastDebounceTime > debounce;
-					if( digitalRead(` + ((_c = transition.sensor.ref) === null || _c === void 0 ? void 0 : _c.inputPin) + `) == ` + transition.value.value + ` && ` + ((_d = transition.sensor.ref) === null || _d === void 0 ? void 0 : _d.name) + `BounceGuard) {
-						` + ((_e = transition.sensor.ref) === null || _e === void 0 ? void 0 : _e.name) + `LastDebounceTime = millis();
-						currentState = ` + ((_f = transition.next.ref) === null || _f === void 0 ? void 0 : _f.name) + `;
+		 			` + ((_a = expression.left.sensor.ref) === null || _a === void 0 ? void 0 : _a.name) + `BounceGuard = millis() - ` + ((_b = expression.left.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `LastDebounceTime > debounce;
+        `);
+    if (!expression.operator) {
+        // Comme avant
+        fileNode.append(`
+					if( digitalRead(` + ((_c = expression.left.sensor.ref) === null || _c === void 0 ? void 0 : _c.inputPin) + `) == ` + expression.left.value.value + ` && ` + ((_d = expression.left.sensor.ref) === null || _d === void 0 ? void 0 : _d.name) + `BounceGuard) {
+						` + ((_e = expression.left.sensor.ref) === null || _e === void 0 ? void 0 : _e.name) + `LastDebounceTime = millis();
+						currentState = ` + ((_f = expression.transition.next.ref) === null || _f === void 0 ? void 0 : _f.name) + `;
 					}
 		`);
+    }
+    else {
+        expression.operator.value === 'and' ? generateAnd(expression, fileNode) : generateOr(expression, fileNode);
+    }
+}
+function generateAnd(expression, fileNode) {
+    var _a, _b, _c, _d, _e, _f;
+    fileNode.append(`
+            if( (digitalRead(` + ((_a = expression.left.sensor.ref) === null || _a === void 0 ? void 0 : _a.inputPin) + `) == ` + expression.left.value.value + ` && ` + ((_b = expression.left.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `BounceGuard) && (digitalRead(` + ((_c = expression.left.sensor.ref) === null || _c === void 0 ? void 0 : _c.inputPin) + `) == ` + expression.left.value.value + ` && ` + ((_d = expression.left.sensor.ref) === null || _d === void 0 ? void 0 : _d.name) + `BounceGuard)  {
+                ` + ((_e = expression.left.sensor.ref) === null || _e === void 0 ? void 0 : _e.name) + `LastDebounceTime = millis();
+                currentState = ` + ((_f = expression.transition.next.ref) === null || _f === void 0 ? void 0 : _f.name) + `;
+        `);
+}
+function generateOr(expression, fileNode) {
+    var _a, _b, _c, _d, _e, _f;
+    fileNode.append(`
+            if( (digitalRead(` + ((_a = expression.left.sensor.ref) === null || _a === void 0 ? void 0 : _a.inputPin) + `) == ` + expression.left.value.value + ` && ` + ((_b = expression.left.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `BounceGuard) || (digitalRead(` + ((_c = expression.left.sensor.ref) === null || _c === void 0 ? void 0 : _c.inputPin) + `) == ` + expression.left.value.value + ` && ` + ((_d = expression.left.sensor.ref) === null || _d === void 0 ? void 0 : _d.name) + `BounceGuard)  {
+                ` + ((_e = expression.left.sensor.ref) === null || _e === void 0 ? void 0 : _e.name) + `LastDebounceTime = millis();
+                currentState = ` + ((_f = expression.transition.next.ref) === null || _f === void 0 ? void 0 : _f.name) + `;
+        `);
 }
 //# sourceMappingURL=generator.js.map

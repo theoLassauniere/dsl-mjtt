@@ -27,18 +27,31 @@ State :
 	name=ID '{'
 		actions+=Action
 		(actions+=Action)* 
-		transition=Transition
+		expression=Expression
 	'}';
 
 
 Action :
 	actuator=[Actuator:ID] '<=' value=Signal;
 
+Expression:
+    {infer Expression}
+    left=Condition (operator=Operator right=Condition)? transition=Transition;
+
+Condition :
+    sensor=[Sensor:ID] 'is' value=Signal;
+
 Transition :
-	sensor=[Sensor:ID] 'is' value=Signal '=>' next=[State:ID];
+    '=>' next=[State:ID];
 
 Signal:
     value=(HIGH | LOW);
+
+Operator:
+    value=(AND | OR);
+
+terminal AND : 'and';
+terminal OR : 'or';
 terminal HIGH : 'HIGH';
 terminal LOW : 'LOW';
 
