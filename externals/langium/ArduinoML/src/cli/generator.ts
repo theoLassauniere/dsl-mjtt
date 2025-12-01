@@ -1,7 +1,16 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, NL, toString } from 'langium';
 import path from 'path';
-import {Action, Actuator, App, Expression, Sensor, State} from '../language-server/generated/ast';
+import {
+    Action,
+    Actuator, AndExpression,
+    App,
+    Condition,
+    Expression, OrExpression,
+    Sensor,
+    State,
+    Transition
+} from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 
 export function generateInoFile(app: App, filePath: string, destination: string | undefined): string {
@@ -87,47 +96,53 @@ long `+brick.name+`LastDebounceTime = 0;
 		fileNode.append(`
 				break;`)
     }
-	
 
-	function compileAction(action: Action, fileNode:CompositeGeneratorNode) {
-		fileNode.append(`
-					digitalWrite(`+action.actuator.ref?.outputPin+`,`+action.value.value+`);`)
-	}
-
-	function compileExpression(expression: Expression, fileNode:CompositeGeneratorNode) {
+    function compileAction(action: Action, fileNode:CompositeGeneratorNode) {
         fileNode.append(`
-		 			`+expression.left.sensor.ref?.name+`BounceGuard = millis() - `+expression.left.sensor.ref?.name+`LastDebounceTime > debounce;
-        `);
-		if (!expression.operator) {
-            // Comme avant
-            fileNode.append(`
-					if( digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) {
-						`+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
-						currentState = `+expression.transition.next.ref?.name+`;
-					}
-		`);
-        } else {
-            expression.operator.value === 'and' ? generateAnd(expression, fileNode) : generateOr(expression, fileNode);
-        }
-	}
-
-    function generateAnd(expression: Expression, fileNode:CompositeGeneratorNode) {
-        if (expression.right)
-        fileNode.append(`
-            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) && (digitalRead(`+expression.right.sensor.ref?.inputPin+`) == `+expression.right.value.value+` && `+expression.right.sensor.ref?.name+`BounceGuard)  {
-                `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
-                `+expression.right.sensor.ref?.name+`LastDebounceTime = millis();
-                currentState = `+expression.transition.next.ref?.name+`;
+                digitalWrite(`+action.actuator.ref?.outputPin+`,`+action.value.value+`);
         `);
     }
 
-    function generateOr(expression: Expression, fileNode:CompositeGeneratorNode) {
-        if (expression.right)
+    function compileExpression(expression: Expression, fileNode: CompositeGeneratorNode) {
+        const conditionCode = generateCondition(expression.condition);
+
         fileNode.append(`
-            if( (digitalRead(`+expression.left.sensor.ref?.inputPin+`) == `+expression.left.value.value+` && `+expression.left.sensor.ref?.name+`BounceGuard) || (digitalRead(`+expression.right.sensor.ref?.inputPin+`) == `+expression.right.value.value+` && `+expression.right.sensor.ref?.name+`BounceGuard)  {
-                `+expression.left.sensor.ref?.name+`LastDebounceTime = millis();
-                `+expression.right.sensor.ref?.name+`LastDebounceTime = millis();
-                currentState = `+expression.transition.next.ref?.name+`;
-        `);
+                if (${conditionCode}) {
+                    ${generateTransitionCode(expression.transition)}
+                }
+            `);
+    }
+
+    function generateTransitionCode(transition: Transition) {
+        return `
+            currentState = `+transition.next.ref?.name+`;
+        `;
+    }
+
+    function generateCondition(expr: Expression): string {
+        if (expr.$type === 'Condition') {
+            return compileCondition(expr as Condition);
+        }
+        if (expr.$type === 'AndExpression') {
+            return generateAndCondition(expr as AndExpression);
+        }
+        if (expr.$type === 'OrExpression') {
+            return generateOrCondition(expr as OrExpression);
+        }
+        return "";
+    }
+
+    function compileCondition(condition: Condition) {
+        return `
+            digitalRead(`+condition.sensor.ref?.name+`) == `+condition.value.value+` && `+condition.sensor.ref?.name+`BounceGuard
+        `;
+    }
+
+    function generateAndCondition(expr: AndExpression): string {
+        return `${generateCondition(expr.left)} && ${generateCondition(expr.right)}`;
+    }
+
+    function generateOrCondition(expr: OrExpression): string {
+        return `${generateCondition(expr.left)} || ${generateCondition(expr.right)}`;
     }
 
