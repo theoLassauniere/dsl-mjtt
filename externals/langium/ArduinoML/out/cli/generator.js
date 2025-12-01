@@ -75,8 +75,8 @@ function compileState(state, fileNode) {
     for (const action of state.actions) {
         compileAction(action, fileNode);
     }
-    if (state.transition !== null) {
-        compileTransition(state.transition, fileNode);
+    if (state.expression !== null) {
+        compileExpression(state.expression, fileNode);
     }
     fileNode.append(`
 				break;`);
@@ -84,16 +84,45 @@ function compileState(state, fileNode) {
 function compileAction(action, fileNode) {
     var _a;
     fileNode.append(`
-					digitalWrite(` + ((_a = action.actuator.ref) === null || _a === void 0 ? void 0 : _a.outputPin) + `,` + action.value.value + `);`);
+                digitalWrite(` + ((_a = action.actuator.ref) === null || _a === void 0 ? void 0 : _a.outputPin) + `,` + action.value.value + `);
+        `);
 }
-function compileTransition(transition, fileNode) {
-    var _a, _b, _c, _d, _e, _f;
+function compileExpression(expression, fileNode) {
+    const conditionCode = generateCondition(expression.condition);
     fileNode.append(`
-		 			` + ((_a = transition.sensor.ref) === null || _a === void 0 ? void 0 : _a.name) + `BounceGuard = millis() - ` + ((_b = transition.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `LastDebounceTime > debounce;
-					if( digitalRead(` + ((_c = transition.sensor.ref) === null || _c === void 0 ? void 0 : _c.inputPin) + `) == ` + transition.value.value + ` && ` + ((_d = transition.sensor.ref) === null || _d === void 0 ? void 0 : _d.name) + `BounceGuard) {
-						` + ((_e = transition.sensor.ref) === null || _e === void 0 ? void 0 : _e.name) + `LastDebounceTime = millis();
-						currentState = ` + ((_f = transition.next.ref) === null || _f === void 0 ? void 0 : _f.name) + `;
-					}
-		`);
+                if (${conditionCode}) {
+                    ${generateTransitionCode(expression.transition)}
+                }
+            `);
+}
+function generateTransitionCode(transition) {
+    var _a;
+    return `
+            currentState = ` + ((_a = transition.next.ref) === null || _a === void 0 ? void 0 : _a.name) + `;
+        `;
+}
+function generateCondition(expr) {
+    if (expr.$type === 'Condition') {
+        return compileCondition(expr);
+    }
+    if (expr.$type === 'AndExpression') {
+        return generateAndCondition(expr);
+    }
+    if (expr.$type === 'OrExpression') {
+        return generateOrCondition(expr);
+    }
+    return "";
+}
+function compileCondition(condition) {
+    var _a, _b;
+    return `
+            digitalRead(` + ((_a = condition.sensor.ref) === null || _a === void 0 ? void 0 : _a.name) + `) == ` + condition.value.value + ` && ` + ((_b = condition.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `BounceGuard
+        `;
+}
+function generateAndCondition(expr) {
+    return `${generateCondition(expr.left)} && ${generateCondition(expr.right)}`;
+}
+function generateOrCondition(expr) {
+    return `${generateCondition(expr.left)} || ${generateCondition(expr.right)}`;
 }
 //# sourceMappingURL=generator.js.map
