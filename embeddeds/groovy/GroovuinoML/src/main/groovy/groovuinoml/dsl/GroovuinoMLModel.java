@@ -33,7 +33,17 @@ public class GroovuinoMLModel {
 		this.binding.setVariable(name, sensor);
 //		System.out.println("> sensor " + name + " on pin " + pinNumber);
 	}
-	
+
+    public void addActionToState(State state, Actuator actuator, SIGNAL value) {
+        if (state.getActions() == null) {
+            state.setActions(new ArrayList<Action>());
+        }
+        Action action = new Action();
+        action.setActuator(actuator);
+        action.setValue(value);
+        state.getActions().add(action);
+    }
+
 	public void createActuator(String name, Integer pinNumber) {
 		Actuator actuator = new Actuator();
 		actuator.setName(name);

@@ -10,6 +10,8 @@ initial "off"
 
 from "off" to "state1" when "button" becomes "high"
 from "state1" to "state2" when "button" becomes "high"
-from "state2" to "off" when "button" becomes "high"
+from "state2" to "off" when "button" becomes "high" then {
+    led becomes low and buzzer becomes low
+}
 
 export "multistate!"
