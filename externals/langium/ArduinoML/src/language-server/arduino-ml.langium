@@ -36,7 +36,13 @@ Action :
 
 Expression:
     {infer Expression}
-    left=Condition (operator=Operator right=Condition)? transition=Transition;
+    condition=OrExpression transition=Transition;
+
+OrExpression infers Expression:
+    AndExpression ({infer OrExpression.left=current} operator=OR right=AndExpression)*;
+
+AndExpression infers Expression:
+    Condition ({infer AndExpression.left=current} operator=AND right=Condition)*;
 
 Condition :
     sensor=[Sensor:ID] 'is' value=Signal;
