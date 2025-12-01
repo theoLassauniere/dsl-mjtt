@@ -106,37 +106,51 @@ public class ToWiring extends Visitor<StringBuffer> {
 
 	}
 
-	@Override
-	public void visit(SignalTransition transition) {
-		if(context.get("pass") == PASS.ONE) {
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			String sensorName = transition.getSensor().getName();
-			w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
-					sensorName, sensorName));
-			w(String.format("\t\t\tif( digitalRead(%d) == %s && %sBounceGuard) {\n",
-					transition.getSensor().getPin(), transition.getValue(), sensorName));
-			w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
-			w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
-			w("\t\t\t}\n");
-			return;
-		}
-	}
+    @Override
+    public void visit(SignalTransition transition) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            String sensorName = transition.getSensor().getName();
+            w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
+                    sensorName, sensorName));
+            w(String.format("\t\t\tif( digitalRead(%d) == %s && %sBounceGuard) {\n",
+                    transition.getSensor().getPin(), transition.getValue(), sensorName));
+            w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
 
-	@Override
-	public void visit(TimeTransition transition) {
-		if(context.get("pass") == PASS.ONE) {
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			int delayInMS = transition.getDelay();
-			w(String.format("\t\t\tdelay(%d);\n", delayInMS));
-			w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
-			w("\t\t\t}\n");
-			return;
-		}
-	}
+            // actions de transition
+            for (Action a : transition.getActions()) {
+                a.accept(this);
+            }
+
+            w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
+            w("\t\t\t}\n");
+            return;
+        }
+    }
+
+    @Override
+    public void visit(TimeTransition transition) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            int delayInMS = transition.getDelay();
+
+            w(String.format("\t\t\tdelay(%d);\n", delayInMS));
+
+            for (Action action : transition.getActions()) {
+                action.accept(this);
+            }
+
+            w("\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
+
+            return;
+        }
+    }
+
+
 
 	@Override
 	public void visit(Action action) {
