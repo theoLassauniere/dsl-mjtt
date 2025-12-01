@@ -49,21 +49,30 @@ public class GroovuinoMLModel {
 		this.states.add(state);
 		this.binding.setVariable(name, state);
 	}
-	
-	public void createTransition(State from, State to, Sensor sensor, SIGNAL value) {
-		SignalTransition transition = new SignalTransition();
-		transition.setNext(to);
-		transition.setSensor(sensor);
-		transition.setValue(value);
-		from.setTransition(transition);
-	}
 
-	public void createTransition(State from, State to, int delay) {
-		TimeTransition transition = new TimeTransition();
-		transition.setNext(to);
-		transition.setDelay(delay);
-		from.setTransition(transition);
-	}
+    public SignalTransition createTransition(State from, State to, Sensor sensor, SIGNAL value) {
+        SignalTransition transition = new SignalTransition();
+        transition.setNext(to);
+        transition.setSensor(sensor);
+        transition.setValue(value);
+        from.setTransition(transition);
+        return transition;
+    }
+
+    public TimeTransition createTransition(State from, State to, int delay) {
+        TimeTransition transition = new TimeTransition();
+        transition.setNext(to);
+        transition.setDelay(delay);
+        from.setTransition(transition);
+        return transition;
+    }
+
+    public void addActionToTransition(Transition transition, Actuator actuator, SIGNAL signal) {
+        Action action = new Action();
+        action.setActuator(actuator);
+        action.setValue(signal);
+        transition.addAction(action);
+    }
 	
 	public void setInitialState(State state) {
 		this.initialState = state;
