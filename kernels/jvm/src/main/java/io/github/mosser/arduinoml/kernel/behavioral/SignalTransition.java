@@ -1,30 +1,30 @@
 package io.github.mosser.arduinoml.kernel.behavioral;
 
 import io.github.mosser.arduinoml.kernel.generator.Visitor;
+import io.github.mosser.arduinoml.kernel.structural.Condition;
 import io.github.mosser.arduinoml.kernel.structural.SIGNAL;
 import io.github.mosser.arduinoml.kernel.structural.Sensor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SignalTransition extends Transition {
 
-    private Sensor sensor;
-    private SIGNAL value;
 
+    private List<Condition> conditions = new ArrayList<Condition>();
 
-    public Sensor getSensor() {
-        return sensor;
+    public List<Condition> getConditions() {
+        return conditions;
     }
 
-    public void setSensor(Sensor sensor) {
-        this.sensor = sensor;
+    public void addCondition(Sensor sensor, SIGNAL value) {
+        conditions.add(new Condition(sensor, value,false));
     }
 
-    public SIGNAL getValue() {
-        return value;
+    public void addCondition(Sensor sensor, SIGNAL value, boolean orWithPrevious) {
+        conditions.add(new Condition(sensor, value,orWithPrevious));
     }
 
-    public void setValue(SIGNAL value) {
-        this.value = value;
-    }
 
     @Override
     public void accept(Visitor visitor) {
