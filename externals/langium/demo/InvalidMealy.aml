@@ -1,0 +1,18 @@
+app InvalidMealy initial state idle {
+    bricks
+        Actuator led1 : 10
+        Sensor button : 8
+
+    states
+        idle {
+            led2 <= LOW
+            button is HIGH => error {
+                led1 <= HIGH
+                led3 <= LOW 
+            }
+        }
+        error {
+            led1 <= LOW
+            button is LOW => idle
+        }
+}

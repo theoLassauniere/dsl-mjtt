@@ -1,0 +1,24 @@
+app MealySimple initial state off {
+    bricks
+        Actuator led1 : 10
+        Actuator led2 : 11
+        Sensor button : 8
+
+    states
+        off {
+            led1 <= LOW
+            led2 <= LOW
+            button is HIGH => on {
+                led1 <= HIGH
+                led2 <= LOW
+            }
+        }
+        on {
+            led1 <= LOW
+            led2 <= LOW
+            button is LOW => off {
+                led1 <= LOW
+                led2 <= HIGH
+            }
+        }
+}

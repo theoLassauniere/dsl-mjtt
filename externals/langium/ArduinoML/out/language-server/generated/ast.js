@@ -102,7 +102,8 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
             case 'Transition:next': {
                 return exports.State;
             }
-            case 'Condition:sensor': {
+            case 'Condition:sensor':
+            case 'Transition:sensor': {
                 return exports.Sensor;
             }
             default: {
@@ -126,6 +127,14 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
                     name: 'State',
                     mandatory: [
                         { name: 'actions', type: 'array' }
+                    ]
+                };
+            }
+            case 'Transition': {
+                return {
+                    name: 'Transition',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
                     ]
                 };
             }
