@@ -1,0 +1,15 @@
+application dualCheckAlarm
+
+sensor button1: 8
+sensor button2: 9
+actuator buzzer: 11
+
+on {
+    buzzer <= HIGH
+    button1 is LOW or button2 is LOW => off
+}
+
+-> off {
+    buzzer <= LOW
+    button1 is HIGH and button2 is LOW => on
+}

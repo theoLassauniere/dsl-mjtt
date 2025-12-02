@@ -15,18 +15,31 @@ bricks          :   (sensor|actuator)+;
     location    :   id=IDENTIFIER ':' port=PORT_NUMBER;
 
 states          :   state+;
-    state       :   initial? name=IDENTIFIER '{'  action+ transition '}';
+    state       :   initial? name=IDENTIFIER '{'  action* transition+ '}';
     action      :   receiver=IDENTIFIER '<=' value=SIGNAL;
-    transition  :   trigger=IDENTIFIER 'is' value=SIGNAL '=>' next=IDENTIFIER ;
+    transition  :   (expr)? '=>' next=IDENTIFIER;
     initial     :   '->';
+
+
+/*****************
+ ** Expressions **
+ *****************/
+
+expr            :   orExpr;
+orExpr          :   andExpr ( OR andExpr )*;
+andExpr         :   atom ( AND atom )*;
+atom            :   IDENTIFIER 'is' SIGNAL;
+
 
 /*****************
  ** Lexer rules **
  *****************/
 
 PORT_NUMBER     :   [1-9] | '11' | '12';
-IDENTIFIER      :   LOWERCASE (LOWERCASE|UPPERCASE)+;
 SIGNAL          :   'HIGH' | 'LOW';
+AND             :   'and';
+OR              :   'or';
+IDENTIFIER      :   [a-zA-Z_] [a-zA-Z0-9_]*;
 
 /*************
  ** Helpers **
