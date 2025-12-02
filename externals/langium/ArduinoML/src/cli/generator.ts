@@ -19,8 +19,8 @@ export function generateInoFile(app: App, filePath: string, destination: string 
 
     const fileNode = new CompositeGeneratorNode();
     compile(app,fileNode)
-
-
+    
+    
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }
@@ -36,16 +36,11 @@ function compile(app:App, fileNode:CompositeGeneratorNode){
 // Application name: `+app.name+`
 
 long debounce = 200;
-enum STATE {
-    `+app.states.map(s => isErrorState(s) ? `error${s.code}` : s.name).join(', ')+`
-};
+enum STATE {`+app.states.map(s => s.name).join(', ')+`};
 
-STATE currentState = ` + (
-    isErrorState(app.initial.ref!)
-    ? `error${(app.initial.ref as any).code}`
-    : app.initial.ref?.name)+`;`
+STATE currentState = `+app.initial.ref?.name+`;`
     ,NL);
-
+	
     for(const brick of app.bricks){
         if ("inputPin" in brick){
             fileNode.append(`
@@ -79,10 +74,6 @@ long `+brick.name+`LastDebounceTime = 0;
 	`,NL);
     }
 
-	function isErrorState(state: State): state is any {
-		return "code" in state;
-	}
-
 	function compileActuator(actuator: Actuator, fileNode: CompositeGeneratorNode) {
         fileNode.append(`
 		pinMode(`+actuator.outputPin+`, OUTPUT); // `+actuator.name+` [Actuator]`)
@@ -94,43 +85,17 @@ long `+brick.name+`LastDebounceTime = 0;
 	}
 
     function compileState(state: State, fileNode: CompositeGeneratorNode) {
-		const stateName = isErrorState(state)
-			? `error${state.code}`
-			: state.name;
-
-		fileNode.append(`
-					case ${stateName}:`)
-
-		if (isErrorState(state)) {
-			const code = state.code;
-			fileNode.append(`
-				while(true) {
-					// répéter 'code' fois HIGH/LOW
-					for(int i = 0; i < ${code}; i++) {
-						digitalWrite(12, HIGH);
-						delay(500);
-						digitalWrite(12, LOW);
-						delay(500);
-					}
-					delay(${code} * 500);
-				}`)
-			fileNode.append(`
-				break;`)
-			return;
+        fileNode.append(`
+				case `+state.name+`:`)
+		for(const action of state.actions){
+			compileAction(action, fileNode)
 		}
-
-		for (const action of state.actions) {
-			compileAction(action, fileNode);
-		}
-
 		if (state.expression !== null){
-			compileExpression(state.expression, fileNode);
+			compileExpression(state.expression, fileNode)
 		}
-
 		fileNode.append(`
-					break;`)
-	}
-
+				break;`)
+    }
 
     function compileAction(action: Action, fileNode:CompositeGeneratorNode) {
         fileNode.append(`
