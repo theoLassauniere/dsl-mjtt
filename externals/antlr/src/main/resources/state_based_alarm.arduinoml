@@ -1,0 +1,14 @@
+application stateBasedAlarm
+
+sensor button: 9
+actuator led: 12
+
+on {
+    led <= HIGH
+    button is HIGH => off
+}
+
+-> off {
+    led <= LOW
+    button is HIGH => on
+}
