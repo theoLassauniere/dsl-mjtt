@@ -1,5 +1,6 @@
 package main.groovy.groovuinoml.dsl
 
+import io.github.mosser.arduinoml.kernel.behavioral.ErrorState
 import io.github.mosser.arduinoml.kernel.behavioral.TimeUnit
 import io.github.mosser.arduinoml.kernel.behavioral.Action
 import io.github.mosser.arduinoml.kernel.behavioral.State
@@ -56,26 +57,19 @@ abstract class GroovuinoMLBasescript extends Script {
     }
 
     def errorState(String name, int times, String actuatorName = "errorLed") {
-        List<Action> actions = new ArrayList<Action>()
-
         // récupère l'actuator par son nom depuis le binding
         Actuator actuator = (Actuator) ((GroovuinoMLBinding) this.getBinding()).getVariable(actuatorName)
 
-        // on ajoute 2 * times actions: HIGH puis LOW pour chaque blink
-        times.times {
-            Action on = new Action()
-            on.setActuator(actuator)
-            on.setValue(SIGNAL.HIGH)
-            actions.add(on)
+        ErrorState errorState = new ErrorState()
+        errorState.setName(name)
+        errorState.setActuator(actuator)
+        errorState.setTimes(times)
+        errorState.setDelay(100) // délai de 100ms
 
-            Action off = new Action()
-            off.setActuator(actuator)
-            off.setValue(SIGNAL.LOW)
-            actions.add(off)
-        }
-
-        ((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel().createState(name, actions)
+        // Ajoute l'état au modèle et au binding
+        ((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel().addState(errorState)
     }
+
 
     // initial state
     def initial(state) {
@@ -119,11 +113,8 @@ abstract class GroovuinoMLBasescript extends Script {
                     if (transitionRef == null) {
                         transitionRef = model.createSignalTransition(fromState, toState, s, v)
                     } else {
-                        if (isOr) {
-                            transitionRef.addConditionOr(s, v)
-                        } else {
-                            transitionRef.addCondition(s, v)
-                        }
+                        transitionRef.addCondition(s, v, isOr)
+
                     }
                 }
 
