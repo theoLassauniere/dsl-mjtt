@@ -9,38 +9,38 @@ import java.util.List;
 
 public class State implements NamedElement, Visitable {
 
-	private String name;
-	private List<Action> actions = new ArrayList<Action>();
-	private Transition transition;
+    private String name;
+    private List<Action> actions = new ArrayList<Action>();
+    private List<Transition> transitions = new ArrayList<Transition>();
 
-	@Override
-	public String getName() {
-		return name;
-	}
+    @Override
+    public String getName() {
+        return name;
+    }
 
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
+    @Override
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public List<Action> getActions() {
-		return actions;
-	}
+    public List<Action> getActions() {
+        return actions;
+    }
 
-	public void setActions(List<Action> actions) {
-		this.actions = actions;
-	}
+    public void setActions(List<Action> actions) {
+        this.actions = actions;
+    }
 
-	public Transition getTransition() {
-		return transition;
-	}
+    public List<Transition> getTransitions() {
+        return transitions;
+    }
 
-	public void setTransition(Transition transition) {
-		this.transition = transition;
-	}
+    public void addTransition(Transition transition) {
+        this.transitions.add(transition);
+    }
 
-	@Override
-	public void accept(Visitor visitor) {
-		visitor.visit(this);
-	}
+    @Override
+    public void accept(Visitor visitor) {
+        visitor.visit(this);
+    }
 }

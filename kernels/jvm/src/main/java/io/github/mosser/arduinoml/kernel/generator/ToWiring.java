@@ -4,12 +4,13 @@ import io.github.mosser.arduinoml.kernel.App;
 import io.github.mosser.arduinoml.kernel.behavioral.*;
 import io.github.mosser.arduinoml.kernel.structural.*;
 
+
+
 /**
  * Quick and dirty visitor to support the generation of Wiring code
  */
 public class ToWiring extends Visitor<StringBuffer> {
 	enum PASS {ONE, TWO}
-
 
 	public ToWiring() {
 		this.result = new StringBuffer();
@@ -85,44 +86,75 @@ public class ToWiring extends Visitor<StringBuffer> {
 		}
 	}
 
-	@Override
-	public void visit(State state) {
-		if(context.get("pass") == PASS.ONE){
-			w(state.getName());
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			w("\t\tcase " + state.getName() + ":\n");
-			for (Action action : state.getActions()) {
-				action.accept(this);
-			}
+    @Override
+    public void visit(State state) {
+        if (context.get("pass") == PASS.ONE) {
+            w(state.getName());
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            w("\t\tcase " + state.getName() + ":\n");
+            for (Action action : state.getActions()) {
+                action.accept(this);
+            }
 
-			if (state.getTransition() != null) {
-				state.getTransition().accept(this);
-				w("\t\tbreak;\n");
-			}
-			return;
-		}
+            for (Transition t : state.getTransitions()) {
+                t.accept(this);
+            }
+            w("\t\t\tbreak;\n");
+        }
+    }
 
-	}
 
-	@Override
-	public void visit(SignalTransition transition) {
-		if(context.get("pass") == PASS.ONE) {
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			String sensorName = transition.getSensor().getName();
-			w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
-					sensorName, sensorName));
-			w(String.format("\t\t\tif( digitalRead(%d) == %s && %sBounceGuard) {\n",
-					transition.getSensor().getPin(), transition.getValue(), sensorName));
-			w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
-			w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
-			w("\t\t\t}\n");
-			return;
-		}
-	}
+    @Override
+    public void visit(SignalTransition transition) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+
+            // 1) debounce pour tous les capteurs concernés
+            for (Condition c : transition.getConditions()) {
+                String sensorName = c.getSensor().getName();
+                w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
+                        sensorName, sensorName));
+            }
+
+            // 2) construction de l'expression if avec AND / OR
+            w("\t\t\tif( ");
+            StringBuilder expr = new StringBuilder();
+            boolean first = true;
+            for (Condition c : transition.getConditions()) {
+                String sensorName = c.getSensor().getName();
+                String cond = String.format("(digitalRead(%d) == %s && %sBounceGuard)",
+                        c.getSensor().getPin(), c.getValue(), sensorName);
+
+                if (first) {
+                    expr.append(cond);
+                    first = false;
+                } else {
+                    if (c.isOrWithPrevious()) {
+                        expr.append(" || ");
+                    } else {
+                        expr.append(" && ");
+                    }
+                    expr.append(cond);
+                }
+            }
+            w(expr.toString());
+            w(" ) {\n");
+
+            // 3) mise à jour du debounce pour tous les capteurs
+            for (Condition c : transition.getConditions()) {
+                String sensorName = c.getSensor().getName();
+                w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
+            }
+
+            // 4) changement d'état
+            w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
+            w("\t\t\t}\n");
+        }
+    }
 
 	@Override
 	public void visit(TimeTransition transition) {
