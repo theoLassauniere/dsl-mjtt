@@ -4,7 +4,7 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reflection = exports.ArduinoMlAstReflection = exports.isOrExpression = exports.OrExpression = exports.isCondition = exports.Condition = exports.isAndExpression = exports.AndExpression = exports.isTransition = exports.Transition = exports.isState = exports.State = exports.isSignal = exports.Signal = exports.isSensor = exports.Sensor = exports.isOperator = exports.Operator = exports.isExpression = exports.Expression = exports.isApp = exports.App = exports.isActuator = exports.Actuator = exports.isAction = exports.Action = exports.isBrick = exports.Brick = void 0;
+exports.reflection = exports.ArduinoMlAstReflection = exports.isOrExpression = exports.OrExpression = exports.isCondition = exports.Condition = exports.isAndExpression = exports.AndExpression = exports.isState = exports.State = exports.isSignal = exports.Signal = exports.isSensor = exports.Sensor = exports.isOperator = exports.Operator = exports.isExpression = exports.Expression = exports.isApp = exports.App = exports.isActuator = exports.Actuator = exports.isAction = exports.Action = exports.isBrick = exports.Brick = void 0;
 /* eslint-disable */
 const langium_1 = require("langium");
 exports.Brick = 'Brick';
@@ -52,11 +52,6 @@ function isState(item) {
     return exports.reflection.isInstance(item, exports.State);
 }
 exports.isState = isState;
-exports.Transition = 'Transition';
-function isTransition(item) {
-    return exports.reflection.isInstance(item, exports.Transition);
-}
-exports.isTransition = isTransition;
 exports.AndExpression = 'AndExpression';
 function isAndExpression(item) {
     return exports.reflection.isInstance(item, exports.AndExpression);
@@ -74,7 +69,7 @@ function isOrExpression(item) {
 exports.isOrExpression = isOrExpression;
 class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
     getAllTypes() {
-        return ['Action', 'Actuator', 'AndExpression', 'App', 'Brick', 'Condition', 'Expression', 'Operator', 'OrExpression', 'Sensor', 'Signal', 'State', 'Transition'];
+        return ['Action', 'Actuator', 'AndExpression', 'App', 'Brick', 'Condition', 'Expression', 'Operator', 'OrExpression', 'Sensor', 'Signal', 'State'];
     }
     computeIsSubtype(subtype, supertype) {
         switch (subtype) {
@@ -98,12 +93,14 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
             case 'Action:actuator': {
                 return exports.Actuator;
             }
+            case 'AndExpression:next':
             case 'App:initial':
-            case 'Transition:next': {
+            case 'Condition:next':
+            case 'Expression:next':
+            case 'OrExpression:next': {
                 return exports.State;
             }
-            case 'Condition:sensor':
-            case 'Transition:sensor': {
+            case 'Condition:sensor': {
                 return exports.Sensor;
             }
             default: {
@@ -122,6 +119,14 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
                     ]
                 };
             }
+            case 'Expression': {
+                return {
+                    name: 'Expression',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
+                    ]
+                };
+            }
             case 'State': {
                 return {
                     name: 'State',
@@ -130,9 +135,25 @@ class ArduinoMlAstReflection extends langium_1.AbstractAstReflection {
                     ]
                 };
             }
-            case 'Transition': {
+            case 'AndExpression': {
                 return {
-                    name: 'Transition',
+                    name: 'AndExpression',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
+                    ]
+                };
+            }
+            case 'Condition': {
+                return {
+                    name: 'Condition',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
+                    ]
+                };
+            }
+            case 'OrExpression': {
+                return {
+                    name: 'OrExpression',
                     mandatory: [
                         { name: 'mealyActions', type: 'array' }
                     ]

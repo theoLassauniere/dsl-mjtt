@@ -15,7 +15,7 @@ export function isBrick(item: unknown): item is Brick {
 }
 
 export interface Action extends AstNode {
-    readonly $container: State | Transition;
+    readonly $container: Expression | State;
     readonly $type: 'Action';
     actuator: Reference<Actuator>
     value: Signal
@@ -58,7 +58,8 @@ export interface Expression extends AstNode {
     readonly $container: AndExpression | Expression | OrExpression | State;
     readonly $type: 'AndExpression' | 'Condition' | 'Expression' | 'OrExpression';
     condition: Expression
-    transition: Transition
+    mealyActions: Array<Action>
+    next: Reference<State>
 }
 
 export const Expression = 'Expression';
@@ -92,7 +93,7 @@ export function isSensor(item: unknown): item is Sensor {
 }
 
 export interface Signal extends AstNode {
-    readonly $container: Action | Condition | Transition;
+    readonly $container: Action | Condition;
     readonly $type: 'Signal';
     value: string
 }
@@ -115,21 +116,6 @@ export const State = 'State';
 
 export function isState(item: unknown): item is State {
     return reflection.isInstance(item, State);
-}
-
-export interface Transition extends AstNode {
-    readonly $container: Expression;
-    readonly $type: 'Transition';
-    mealyActions: Array<Action>
-    next: Reference<State>
-    sensor: Reference<Sensor>
-    value: Signal
-}
-
-export const Transition = 'Transition';
-
-export function isTransition(item: unknown): item is Transition {
-    return reflection.isInstance(item, Transition);
 }
 
 export interface AndExpression extends Expression {
@@ -186,13 +172,12 @@ export interface ArduinoMlAstType {
     Sensor: Sensor
     Signal: Signal
     State: State
-    Transition: Transition
 }
 
 export class ArduinoMlAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Action', 'Actuator', 'AndExpression', 'App', 'Brick', 'Condition', 'Expression', 'Operator', 'OrExpression', 'Sensor', 'Signal', 'State', 'Transition'];
+        return ['Action', 'Actuator', 'AndExpression', 'App', 'Brick', 'Condition', 'Expression', 'Operator', 'OrExpression', 'Sensor', 'Signal', 'State'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -218,12 +203,14 @@ export class ArduinoMlAstReflection extends AbstractAstReflection {
             case 'Action:actuator': {
                 return Actuator;
             }
+            case 'AndExpression:next':
             case 'App:initial':
-            case 'Transition:next': {
+            case 'Condition:next':
+            case 'Expression:next':
+            case 'OrExpression:next': {
                 return State;
             }
-            case 'Condition:sensor':
-            case 'Transition:sensor': {
+            case 'Condition:sensor': {
                 return Sensor;
             }
             default: {
@@ -243,6 +230,14 @@ export class ArduinoMlAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
+            case 'Expression': {
+                return {
+                    name: 'Expression',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
+                    ]
+                };
+            }
             case 'State': {
                 return {
                     name: 'State',
@@ -251,9 +246,25 @@ export class ArduinoMlAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
-            case 'Transition': {
+            case 'AndExpression': {
                 return {
-                    name: 'Transition',
+                    name: 'AndExpression',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
+                    ]
+                };
+            }
+            case 'Condition': {
+                return {
+                    name: 'Condition',
+                    mandatory: [
+                        { name: 'mealyActions', type: 'array' }
+                    ]
+                };
+            }
+            case 'OrExpression': {
+                return {
+                    name: 'OrExpression',
                     mandatory: [
                         { name: 'mealyActions', type: 'array' }
                     ]

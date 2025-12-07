@@ -88,23 +88,23 @@ function compileAction(action, fileNode) {
         `);
 }
 function compileExpression(expression, fileNode) {
+    var _a;
     const conditionCode = generateCondition(expression.condition);
     fileNode.append(`
-                if (${conditionCode}) {
-                    ${generateTransitionCode(expression.transition, fileNode)}
-                }
-            `);
-}
-function generateTransitionCode(transition, fileNode) {
-    var _a;
-    if (transition.mealyActions && transition.mealyActions.length > 0) {
-        for (const action of transition.mealyActions) {
+                if (${conditionCode}) {`);
+    // Execute Mealy actions before state transition
+    if (expression.mealyActions && expression.mealyActions.length > 0) {
+        for (const action of expression.mealyActions) {
+            fileNode.append(`
+                    `);
             compileAction(action, fileNode);
         }
     }
-    return `
-            currentState = ` + ((_a = transition.next.ref) === null || _a === void 0 ? void 0 : _a.name) + `;
-        `;
+    // Then transition to next state
+    fileNode.append(`
+                    currentState = ${(_a = expression.next.ref) === null || _a === void 0 ? void 0 : _a.name};
+                }
+            `);
 }
 function generateCondition(expr) {
     if (expr.$type === 'Condition') {

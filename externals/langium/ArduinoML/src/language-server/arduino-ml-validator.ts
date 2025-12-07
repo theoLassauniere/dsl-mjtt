@@ -32,7 +32,7 @@ export class ArduinoMlValidator {
     }
     checkActuatorsExist(app: App, accept: ValidationAcceptor): void {
     for (const state of app.states) {
-        // Moore actions
+        // Moore
         if (state.actions) {
             for (const action of state.actions) {
                 if (!action.actuator.ref) {
@@ -44,9 +44,9 @@ export class ArduinoMlValidator {
             }
         }
 
-        // Mealy actions
-        if (state.expression.transition && state.expression.transition.mealyActions) {
-            for (const action of state.actions) {
+        // Mealy
+        if (state.expression.mealyActions) {
+            for (const action of state.expression.mealyActions) {
                 if (!action.actuator.ref) {
                     accept('error', `Actuator '${action.actuator.$refText}' is not declared in transition.`, {
                         node: action,
