@@ -24,18 +24,27 @@ public class GroovuinoMLModel {
 		this.states = new ArrayList<State>();
 		this.binding = binding;
 	}
-	
+
+
+    private void checkNameUniqueness(String name) {
+        if (this.binding.hasVariable(name)) {
+            throw new IllegalArgumentException("Le nom '" + name + "' est déjà utilisé. Veuillez choisir un nom unique.");
+        }
+    }
+
 	public void createSensor(String name, Integer pinNumber) {
-		Sensor sensor = new Sensor();
+        checkNameUniqueness(name);
+
+        Sensor sensor = new Sensor();
 		sensor.setName(name);
 		sensor.setPin(pinNumber);
 		this.bricks.add(sensor);
 		this.binding.setVariable(name, sensor);
-//		System.out.println("> sensor " + name + " on pin " + pinNumber);
 	}
 	
 	public void createActuator(String name, Integer pinNumber) {
-		Actuator actuator = new Actuator();
+        checkNameUniqueness(name);
+        Actuator actuator = new Actuator();
 		actuator.setName(name);
 		actuator.setPin(pinNumber);
 		this.bricks.add(actuator);
@@ -43,6 +52,7 @@ public class GroovuinoMLModel {
 	}
 
     public void createState(String name, List<Action> actions) {
+        checkNameUniqueness(name);
         State state = new State();
         state.setName(name);
         state.setActions(actions);
@@ -51,6 +61,7 @@ public class GroovuinoMLModel {
     }
 
     public void addState(State state) {
+        checkNameUniqueness(state.getName());
         this.states.add(state);
         this.binding.setVariable(state.getName(), state);
     }
