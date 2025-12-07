@@ -1,7 +1,16 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, NL, toString } from 'langium';
 import path from 'path';
-import { Action, Actuator, App, Sensor, State, Transition } from '../language-server/generated/ast';
+import {
+    Action,
+    Actuator, AndExpression,
+    App,
+    Condition,
+    Expression, OrExpression,
+    Sensor,
+    State,
+    Transition
+} from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 
 export function generateInoFile(app: App, filePath: string, destination: string | undefined): string {
@@ -63,10 +72,6 @@ long `+brick.name+`LastDebounceTime = 0;
 		}
 	}
 	`,NL);
-
-
-
-
     }
 
 	function compileActuator(actuator: Actuator, fileNode: CompositeGeneratorNode) {
@@ -85,26 +90,59 @@ long `+brick.name+`LastDebounceTime = 0;
 		for(const action of state.actions){
 			compileAction(action, fileNode)
 		}
-		if (state.transition !== null){
-			compileTransition(state.transition, fileNode)
+		if (state.expression !== null){
+			compileExpression(state.expression, fileNode)
 		}
 		fileNode.append(`
 				break;`)
     }
-	
 
-	function compileAction(action: Action, fileNode:CompositeGeneratorNode) {
-		fileNode.append(`
-					digitalWrite(`+action.actuator.ref?.outputPin+`,`+action.value.value+`);`)
-	}
+    function compileAction(action: Action, fileNode:CompositeGeneratorNode) {
+        fileNode.append(`
+                digitalWrite(`+action.actuator.ref?.outputPin+`,`+action.value.value+`);
+        `);
+    }
 
-	function compileTransition(transition: Transition, fileNode:CompositeGeneratorNode) {
-		fileNode.append(`
-		 			`+transition.sensor.ref?.name+`BounceGuard = millis() - `+transition.sensor.ref?.name+`LastDebounceTime > debounce;
-					if( digitalRead(`+transition.sensor.ref?.inputPin+`) == `+transition.value.value+` && `+transition.sensor.ref?.name+`BounceGuard) {
-						`+transition.sensor.ref?.name+`LastDebounceTime = millis();
-						currentState = `+transition.next.ref?.name+`;
-					}
-		`)
-	}
+    function compileExpression(expression: Expression, fileNode: CompositeGeneratorNode) {
+        const conditionCode = generateCondition(expression.condition);
+
+        fileNode.append(`
+                if (${conditionCode}) {
+                    ${generateTransitionCode(expression.transition)}
+                }
+            `);
+    }
+
+    function generateTransitionCode(transition: Transition) {
+        return `
+            currentState = `+transition.next.ref?.name+`;
+        `;
+    }
+
+    function generateCondition(expr: Expression): string {
+        if (expr.$type === 'Condition') {
+            return compileCondition(expr as Condition);
+        }
+        if (expr.$type === 'AndExpression') {
+            return generateAndCondition(expr as AndExpression);
+        }
+        if (expr.$type === 'OrExpression') {
+            return generateOrCondition(expr as OrExpression);
+        }
+        return "";
+    }
+
+    function compileCondition(condition: Condition) {
+        return `
+            digitalRead(`+condition.sensor.ref?.name+`) == `+condition.value.value+` && `+condition.sensor.ref?.name+`BounceGuard
+        `;
+    }
+
+    function generateAndCondition(expr: AndExpression): string {
+        return `${generateCondition(expr.left)} && ${generateCondition(expr.right)}`;
+    }
+
+    function generateOrCondition(expr: OrExpression): string {
+        return `${generateCondition(expr.left)} || ${generateCondition(expr.right)}`;
+    }
 

@@ -1,0 +1,19 @@
+app DualCheck initial state off {
+	bricks
+		Actuator red_led : 12
+		Sensor button1 : 9
+		Sensor button2 : 8
+		Sensor button3 : 7
+		Sensor button4 : 6
+		Sensor button5 : 5
+
+	states
+		off {
+			red_led <= LOW
+			button1 is HIGH and button2 is HIGH and button3 is HIGH and button4 is HIGH or button5 is HIGH => on
+		}
+		on {
+			red_led <= HIGH
+			button1 is LOW or button2 is LOW or button3 is LOW => off
+		}
+}
