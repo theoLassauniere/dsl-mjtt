@@ -134,7 +134,7 @@ long `+brick.name+`LastDebounceTime = 0;
 
     function compileCondition(condition: Condition) {
         return `
-            digitalRead(`+condition.sensor.ref?.name+`) == `+condition.value.value+` && `+condition.sensor.ref?.name+`BounceGuard
+            (digitalRead(`+condition.sensor.ref?.name+`) == `+condition.value.value+` && `+condition.sensor.ref?.name+`BounceGuard)
         `;
     }
 

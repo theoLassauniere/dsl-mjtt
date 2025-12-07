@@ -6,10 +6,10 @@ app StateBasedAlarm initial state off {
 	states
 		off {
 			led <= LOW
-			button is HIGH => on
+			(button is HIGH) => on
 		}
 		on {
 			led <= HIGH
-			button is HIGH => off
+			(button is HIGH) => off
 		}
 }

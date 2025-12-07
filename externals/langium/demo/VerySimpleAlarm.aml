@@ -8,11 +8,11 @@ app RedButton initial state off {
 		off {
 			led <= LOW
             buzzer <= LOW
-			button is HIGH => on
+			(button is HIGH) => on
 		}
 		on {
 			led <= HIGH
             buzzer <= HIGH
-			button is LOW => off
+			(button is LOW) => off
 		}
 }

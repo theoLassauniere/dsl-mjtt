@@ -116,7 +116,7 @@ function generateCondition(expr) {
 function compileCondition(condition) {
     var _a, _b;
     return `
-            digitalRead(` + ((_a = condition.sensor.ref) === null || _a === void 0 ? void 0 : _a.name) + `) == ` + condition.value.value + ` && ` + ((_b = condition.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `BounceGuard
+            (digitalRead(` + ((_a = condition.sensor.ref) === null || _a === void 0 ? void 0 : _a.name) + `) == ` + condition.value.value + ` && ` + ((_b = condition.sensor.ref) === null || _b === void 0 ? void 0 : _b.name) + `BounceGuard)
         `;
 }
 function generateAndCondition(expr) {

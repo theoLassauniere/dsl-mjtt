@@ -45,7 +45,7 @@ AndExpression infers Expression:
     Condition ({infer AndExpression.left=current} operator=AND right=Condition)*;
 
 Condition :
-    sensor=[Sensor:ID] 'is' value=Signal;
+    '(' sensor=[Sensor:ID] 'is' value=Signal ')';
 
 Transition :
     '=>' next=[State:ID];
