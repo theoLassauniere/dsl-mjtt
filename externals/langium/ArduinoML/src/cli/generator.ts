@@ -8,8 +8,7 @@ import {
     Condition,
     Expression, OrExpression,
     Sensor,
-    State,
-    Transition
+    State
 } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 
@@ -107,21 +106,22 @@ long `+brick.name+`LastDebounceTime = 0;
         const conditionCode = generateCondition(expression.condition);
 
         fileNode.append(`
-                if (${conditionCode}) {
-                    ${generateTransitionCode(expression.transition, fileNode)}
+                if (${conditionCode}) {`);
+        
+        // Execute Mealy actions before state transition
+        if (expression.mealyActions && expression.mealyActions.length > 0) {
+            for (const action of expression.mealyActions) {
+                fileNode.append(`
+                    `);
+                compileAction(action, fileNode);
+            }
+        }
+        
+        // Then transition to next state
+        fileNode.append(`
+                    currentState = ${expression.next.ref?.name};
                 }
             `);
-    }
-
-    function generateTransitionCode(transition: Transition, fileNode: CompositeGeneratorNode): string {
-		if (transition.mealyActions && transition.mealyActions.length > 0) {
-			for (const action of transition.mealyActions) {
-				compileAction(action, fileNode);
-			}
-		}
-        return `
-            currentState = `+transition.next.ref?.name+`;
-        `;
     }
 
     function generateCondition(expr: Expression): string {

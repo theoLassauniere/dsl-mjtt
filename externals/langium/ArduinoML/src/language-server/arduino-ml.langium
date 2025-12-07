@@ -36,7 +36,8 @@ Action :
 
 Expression:
     {infer Expression}
-    condition=OrExpression transition=Transition;
+    condition=OrExpression '=>' next=[State:ID]
+    ( '{' mealyActions+=Action (mealyActions+=Action)* '}' )?;
 
 OrExpression infers Expression:
     AndExpression ({infer OrExpression.left=current} operator=OR right=AndExpression)*;
@@ -46,10 +47,6 @@ AndExpression infers Expression:
 
 Condition :
     sensor=[Sensor:ID] 'is' value=Signal;
-
-Transition :
-    sensor=[Sensor:ID] 'is' value=Signal '=>' next=[State:ID]
-    ( '{' mealyActions+=Action (mealyActions+=Action)* '}' )?;
 
 Signal:
     value=(HIGH | LOW);
