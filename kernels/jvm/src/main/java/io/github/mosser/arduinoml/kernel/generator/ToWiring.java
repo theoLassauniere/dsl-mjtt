@@ -175,10 +175,31 @@ public class ToWiring extends Visitor<StringBuffer> {
 		if(context.get("pass") == PASS.ONE) {
 			return;
 		}
-		if(context.get("pass") == PASS.TWO) {
-			w(String.format("\t\t\tdigitalWrite(%d,%s);\n",action.getActuator().getPin(),action.getValue()));
-			return;
-		}
+        if(context.get("pass") == PASS.TWO) {
+            w(String.format("\t\t\tdigitalWrite(%d,%s);\n",action.getActuator().getPin(),action.getValue()));
+            if (action.getDelay() > 0) {
+                w(String.format("\t\t\tdelay(%d);\n", action.getDelay()));
+            }
+        }
 	}
+
+    @Override
+    public void visit(ErrorState errorState) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            w("\t\tcase " + errorState.getName() + ":\n");
+            w(String.format("\t\t\tfor (int i = 0; i < %d; i++) {\n", errorState.getTimes()));
+            w(String.format("\t\t\t\tdigitalWrite(%d, HIGH);\n", errorState.getActuator().getPin()));
+            w(String.format("\t\t\t\tdelay(%d);\n", errorState.getDelay()));
+            w(String.format("\t\t\t\tdigitalWrite(%d, LOW);\n", errorState.getActuator().getPin()));
+            w(String.format("\t\t\t\tdelay(%d);\n", errorState.getDelay()));
+            w("\t\t\t}\n");
+            w("\t\t\tdelay(3000);\n");
+            w("\t\t\tbreak;\n");
+        }
+
+    }
 
 }
