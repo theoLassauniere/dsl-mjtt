@@ -63,7 +63,7 @@ class GroovuinoMLDSL {
 		
 		binding.setScript(script)
 		script.setBinding(binding)
-		
+
 		script.run()
 	}
 }

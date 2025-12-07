@@ -4,13 +4,12 @@ import io.github.mosser.arduinoml.kernel.App;
 import io.github.mosser.arduinoml.kernel.behavioral.*;
 import io.github.mosser.arduinoml.kernel.structural.*;
 
-
-
 /**
  * Quick and dirty visitor to support the generation of Wiring code
  */
 public class ToWiring extends Visitor<StringBuffer> {
 	enum PASS {ONE, TWO}
+
 
 	public ToWiring() {
 		this.result = new StringBuffer();
@@ -113,14 +112,13 @@ public class ToWiring extends Visitor<StringBuffer> {
         }
         if (context.get("pass") == PASS.TWO) {
 
-            // 1) debounce pour tous les capteurs concernés
             for (Condition c : transition.getConditions()) {
                 String sensorName = c.getSensor().getName();
                 w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
                         sensorName, sensorName));
             }
 
-            // 2) construction de l'expression if avec AND / OR
+
             w("\t\t\tif( ");
             StringBuilder expr = new StringBuilder();
             boolean first = true;
@@ -144,31 +142,39 @@ public class ToWiring extends Visitor<StringBuffer> {
             w(expr.toString());
             w(" ) {\n");
 
-            // 3) mise à jour du debounce pour tous les capteurs
             for (Condition c : transition.getConditions()) {
                 String sensorName = c.getSensor().getName();
                 w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
             }
 
-            // 4) changement d'état
+            for (Action a : transition.getActions()) {
+                a.accept(this);
+            }
+
             w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
             w("\t\t\t}\n");
         }
     }
 
-	@Override
-	public void visit(TimeTransition transition) {
-		if(context.get("pass") == PASS.ONE) {
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			int delayInMS = transition.getDelay();
-			w(String.format("\t\t\tdelay(%d);\n", delayInMS));
-			w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
-			w("\t\t\t}\n");
-			return;
-		}
-	}
+    @Override
+    public void visit(TimeTransition transition) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            int delayInMS = transition.getDelay();
+
+            w(String.format("\t\t\tdelay(%d);\n", delayInMS));
+
+            for (Action action : transition.getActions()) {
+                action.accept(this);
+            }
+
+            w("\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
+
+            return;
+        }
+    }
 
 	@Override
 	public void visit(Action action) {

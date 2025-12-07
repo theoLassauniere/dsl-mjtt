@@ -78,88 +78,80 @@ abstract class GroovuinoMLBasescript extends Script {
         )
     }
 
-    // from state1 to state2 when s1 becomes v1 and/or s2 becomes v2 ...
     def from(state1) {
         [
-            to: { state2 ->
-                def model = ((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel()
+                to: { state2 ->
+                    def model = ((GroovuinoMLBinding) this.getBinding()).getGroovuinoMLModel()
 
-                State fromState = state1 instanceof String
-                        ? (State) ((GroovuinoMLBinding) this.getBinding()).getVariable(state1)
-                        : (State) state1
+                    // Résolution des états
+                    State fromState = state1 instanceof String ? (State) binding.getVariable(state1) : (State) state1
+                    State toState = state2 instanceof String ? (State) binding.getVariable(state2) : (State) state2
 
-                State toState = state2 instanceof String
-                        ? (State) ((GroovuinoMLBinding) this.getBinding()).getVariable(state2)
-                        : (State) state2
-
-                SignalTransition transitionRef = null
-
-                def resolveSensor = { s ->
-                    s instanceof String
-                            ? (Sensor) ((GroovuinoMLBinding) this.getBinding()).getVariable(s)
-                            : (Sensor) s
-                }
-                def resolveSignal = { v ->
-                    v instanceof String
-                            ? (SIGNAL) ((GroovuinoMLBinding) this.getBinding()).getVariable(v)
-                            : (SIGNAL) v
-                }
-
-                // fonction interne pour ajouter une condition AND ou OR
-                def doAddCondition = { sensor, signal, boolean isOr ->
-                    Sensor s = resolveSensor(sensor)
-                    SIGNAL v = resolveSignal(signal)
-
-                    if (transitionRef == null) {
-                        transitionRef = model.createSignalTransition(fromState, toState, s, v)
-                    } else {
-                        transitionRef.addCondition(s, v, isOr)
-
-                    }
-                }
-
-                // on déclare d'abord les closures and / or,
-                // puis on les utilise dans addCondition
-                def andClosure
-                def orClosure
-
-                andClosure = { sensor ->
-                    [
-                        becomes: { signal ->
-                            doAddCondition(sensor, signal, false)
+                    // Closure pour ajouter des actions à une transition
+                    def addActionsToTransition = { transition ->
+                        def actionClosure
+                        actionClosure = { actuator ->
                             [
-                                and: andClosure,
-                                or : orClosure
+                                    becomes: { signalValue ->
+                                        def act = actuator instanceof String ? (Actuator) binding.getVariable(actuator) : (Actuator) actuator
+                                        def sig = signalValue instanceof String ? (SIGNAL) binding.getVariable(signalValue) : (SIGNAL) signalValue
+                                        model.addActionToTransition(transition, act, sig)
+                                        [and: actionClosure]
+                                    }
                             ]
                         }
-                    ]
-                }
-
-                orClosure = { sensor ->
-                    [
-                        becomes: { signal ->
-                            doAddCondition(sensor, signal, true)
-                            [
-                                and: andClosure,
-                                or : orClosure
-                            ]
-                        }
-                    ]
-                }
-
-                // point d'entrée pour le DSL: when ...
-                def addCondition = andClosure
-
-                [
-                    when : addCondition,
-                    after: { delay ->
-                        model.createTimeTransition(fromState, toState, delay)
+                        return [then: actionClosure]
                     }
-                ]
-            }
+
+                    // Logique pour les transitions basées sur les signaux (when)
+                    SignalTransition signalTransitionRef = null
+                    def resolveSensor = { s -> s instanceof String ? (Sensor) binding.getVariable(s) : (Sensor) s }
+                    def resolveSignal = { v -> v instanceof String ? (SIGNAL) binding.getVariable(v) : (SIGNAL) v }
+
+                    def doAddCondition = { sensor, signal, boolean isOr ->
+                        if (signalTransitionRef == null) {
+                            signalTransitionRef = model.createSignalTransition(fromState, toState, resolveSensor(sensor), resolveSignal(signal))
+                        } else {
+                            signalTransitionRef.addCondition(resolveSensor(sensor), resolveSignal(signal), isOr)
+                        }
+                    }
+
+                    def andClosure, orClosure
+                    andClosure = { sensor ->
+                        [
+                                becomes: { signal ->
+                                    doAddCondition(sensor, signal, false)
+                                    def result = [and: andClosure, or: orClosure]
+                                    result.putAll(addActionsToTransition(signalTransitionRef))
+                                    result
+                                }
+                        ]
+                    }
+                    orClosure = { sensor ->
+                        [
+                                becomes: { signal ->
+                                    doAddCondition(sensor, signal, true)
+                                    def result = [and: andClosure, or: orClosure]
+                                    result.putAll(addActionsToTransition(signalTransitionRef))
+                                    result
+                                }
+                        ]
+                    }
+
+                    // Logique pour les transitions temporelles (after)
+                    def afterClosure = { delay ->
+                        def timeTransition = model.createTimeTransition(fromState, toState, delay)
+                        addActionsToTransition(timeTransition)
+                    }
+
+                    // Point d'entrée du DSL pour la transition
+                    [
+                            when : andClosure,
+                            after: afterClosure
+                    ]
+                }
         ]
     }
-
 
     // export name
     def export(String name) {
