@@ -41,21 +41,25 @@ public class GroovuinoMLModel {
 		this.bricks.add(actuator);
 		this.binding.setVariable(name, actuator);
 	}
-	
-	public void createState(String name, List<Action> actions) {
-		State state = new State();
-		state.setName(name);
-		state.setActions(actions);
-		this.states.add(state);
-		this.binding.setVariable(name, state);
-	}
 
-    public SignalTransition createTransition(State from, State to, Sensor sensor, SIGNAL value) {
+    public void createState(String name, List<Action> actions) {
+        State state = new State();
+        state.setName(name);
+        state.setActions(actions);
+        this.states.add(state);
+        this.binding.setVariable(name, state);
+    }
+
+    public void addState(State state) {
+        this.states.add(state);
+        this.binding.setVariable(state.getName(), state);
+    }
+
+    public SignalTransition createSignalTransition(State from, State to, Sensor sensor, SIGNAL value) {
         SignalTransition transition = new SignalTransition();
         transition.setNext(to);
-        transition.setSensor(sensor);
-        transition.setValue(value);
-        from.setTransition(transition);
+        transition.addCondition(sensor, value);
+        from.addTransition(transition);
         return transition;
     }
 
@@ -63,7 +67,7 @@ public class GroovuinoMLModel {
         TimeTransition transition = new TimeTransition();
         transition.setNext(to);
         transition.setDelay(delay);
-        from.setTransition(transition);
+        from.addTransition(transition);
         return transition;
     }
 

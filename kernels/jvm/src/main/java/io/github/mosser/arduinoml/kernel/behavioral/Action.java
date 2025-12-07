@@ -9,6 +9,7 @@ public class Action implements Visitable {
 
 	private SIGNAL value;
 	private Actuator actuator;
+    private long delay = 0;
 
 
 	public SIGNAL getValue() {
@@ -26,6 +27,17 @@ public class Action implements Visitable {
 	public void setActuator(Actuator actuator) {
 		this.actuator = actuator;
 	}
+
+    public long getDelay() {
+        return delay;
+    }
+
+    public void setDelay(long delay) {
+        if (delay < 0) {
+            throw new IllegalArgumentException("Le délai ne peut pas être négatif.");
+        }
+        this.delay = delay;
+    }
 
 	@Override
 	public void accept(Visitor visitor) {

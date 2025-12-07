@@ -45,4 +45,4 @@ mkdir -p "$OUT_DIR"
 
 OUT_FILE="$OUT_DIR/$BASENAME.ino"
 
-java -jar target/dsl-groovy-1.0-jar-with-dependencies.jar "$GROOVY_SCRIPT_PATH" > "$OUT_FILE"
+java8 && java -jar target/dsl-groovy-1.0-jar-with-dependencies.jar "$GROOVY_SCRIPT_PATH" > "$OUT_FILE"
