@@ -85,68 +85,127 @@ public class ToWiring extends Visitor<StringBuffer> {
 		}
 	}
 
-	@Override
-	public void visit(State state) {
-		if(context.get("pass") == PASS.ONE){
-			w(state.getName());
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			w("\t\tcase " + state.getName() + ":\n");
-			for (Action action : state.getActions()) {
-				action.accept(this);
-			}
+    @Override
+    public void visit(State state) {
+        if (context.get("pass") == PASS.ONE) {
+            w(state.getName());
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            w("\t\tcase " + state.getName() + ":\n");
+            for (Action action : state.getActions()) {
+                action.accept(this);
+            }
 
-			if (state.getTransition() != null) {
-				state.getTransition().accept(this);
-				w("\t\tbreak;\n");
-			}
-			return;
-		}
+            for (Transition t : state.getTransitions()) {
+                t.accept(this);
+            }
+            w("\t\t\tbreak;\n");
+        }
+    }
 
-	}
 
-	@Override
-	public void visit(SignalTransition transition) {
-		if(context.get("pass") == PASS.ONE) {
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			String sensorName = transition.getSensor().getName();
-			w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
-					sensorName, sensorName));
-			w(String.format("\t\t\tif( digitalRead(%d) == %s && %sBounceGuard) {\n",
-					transition.getSensor().getPin(), transition.getValue(), sensorName));
-			w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
-			w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
-			w("\t\t\t}\n");
-			return;
-		}
-	}
+    @Override
+    public void visit(SignalTransition transition) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
 
-	@Override
-	public void visit(TimeTransition transition) {
-		if(context.get("pass") == PASS.ONE) {
-			return;
-		}
-		if(context.get("pass") == PASS.TWO) {
-			int delayInMS = transition.getDelay();
-			w(String.format("\t\t\tdelay(%d);\n", delayInMS));
-			w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
-			w("\t\t\t}\n");
-			return;
-		}
-	}
+            for (Condition c : transition.getConditions()) {
+                String sensorName = c.getSensor().getName();
+                w(String.format("\t\t\t%sBounceGuard = millis() - %sLastDebounceTime > debounce;\n",
+                        sensorName, sensorName));
+            }
+
+
+            w("\t\t\tif( ");
+            StringBuilder expr = new StringBuilder();
+            boolean first = true;
+            for (Condition c : transition.getConditions()) {
+                String sensorName = c.getSensor().getName();
+                String cond = String.format("(digitalRead(%d) == %s && %sBounceGuard)",
+                        c.getSensor().getPin(), c.getValue(), sensorName);
+
+                if (first) {
+                    expr.append(cond);
+                    first = false;
+                } else {
+                    if (c.isOrWithPrevious()) {
+                        expr.append(" || ");
+                    } else {
+                        expr.append(" && ");
+                    }
+                    expr.append(cond);
+                }
+            }
+            w(expr.toString());
+            w(" ) {\n");
+
+            for (Condition c : transition.getConditions()) {
+                String sensorName = c.getSensor().getName();
+                w(String.format("\t\t\t\t%sLastDebounceTime = millis();\n", sensorName));
+            }
+
+            for (Action a : transition.getActions()) {
+                a.accept(this);
+            }
+
+            w("\t\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
+            w("\t\t\t}\n");
+        }
+    }
+
+    @Override
+    public void visit(TimeTransition transition) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            int delayInMS = transition.getDelay();
+
+            w(String.format("\t\t\tdelay(%d);\n", delayInMS));
+
+            for (Action action : transition.getActions()) {
+                action.accept(this);
+            }
+
+            w("\t\t\tcurrentState = " + transition.getNext().getName() + ";\n");
+
+            return;
+        }
+    }
 
 	@Override
 	public void visit(Action action) {
 		if(context.get("pass") == PASS.ONE) {
 			return;
 		}
-		if(context.get("pass") == PASS.TWO) {
-			w(String.format("\t\t\tdigitalWrite(%d,%s);\n",action.getActuator().getPin(),action.getValue()));
-			return;
-		}
+        if(context.get("pass") == PASS.TWO) {
+            w(String.format("\t\t\tdigitalWrite(%d,%s);\n",action.getActuator().getPin(),action.getValue()));
+            if (action.getDelay() > 0) {
+                w(String.format("\t\t\tdelay(%d);\n", action.getDelay()));
+            }
+        }
 	}
+
+    @Override
+    public void visit(ErrorState errorState) {
+        if (context.get("pass") == PASS.ONE) {
+            return;
+        }
+        if (context.get("pass") == PASS.TWO) {
+            w("\t\tcase " + errorState.getName() + ":\n");
+            w(String.format("\t\t\tfor (int i = 0; i < %d; i++) {\n", errorState.getTimes()));
+            w(String.format("\t\t\t\tdigitalWrite(%d, HIGH);\n", errorState.getActuator().getPin()));
+            w(String.format("\t\t\t\tdelay(%d);\n", errorState.getDelay()));
+            w(String.format("\t\t\t\tdigitalWrite(%d, LOW);\n", errorState.getActuator().getPin()));
+            w(String.format("\t\t\t\tdelay(%d);\n", errorState.getDelay()));
+            w("\t\t\t}\n");
+            w("\t\t\tdelay(3000);\n");
+            w("\t\t\tbreak;\n");
+        }
+
+    }
 
 }

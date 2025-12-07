@@ -1,0 +1,17 @@
+application verySimpleAlarm
+
+sensor button: 9
+actuator buzzer: 11
+actuator led: 12
+
+on {
+    led <= HIGH
+    buzzer <= HIGH
+    button is LOW => off
+}
+
+-> off {
+    led <= LOW
+    buzzer <= LOW
+    button is HIGH => on
+}

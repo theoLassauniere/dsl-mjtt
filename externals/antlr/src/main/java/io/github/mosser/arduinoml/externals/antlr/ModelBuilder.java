@@ -7,7 +7,6 @@ import io.github.mosser.arduinoml.kernel.App;
 import io.github.mosser.arduinoml.kernel.behavioral.Action;
 import io.github.mosser.arduinoml.kernel.behavioral.SignalTransition;
 import io.github.mosser.arduinoml.kernel.behavioral.State;
-import io.github.mosser.arduinoml.kernel.behavioral.Transition;
 import io.github.mosser.arduinoml.kernel.structural.Actuator;
 import io.github.mosser.arduinoml.kernel.structural.SIGNAL;
 import io.github.mosser.arduinoml.kernel.structural.Sensor;
@@ -36,12 +35,12 @@ public class ModelBuilder extends ArduinomlBaseListener {
     private Map<String, Sensor>   sensors   = new HashMap<>();
     private Map<String, Actuator> actuators = new HashMap<>();
     private Map<String, State>    states  = new HashMap<>();
-    private Map<String, Binding>  bindings  = new HashMap<>();
+    private Map<String, TransitionBinding>  bindings  = new HashMap<>();
 
-    private class Binding { // used to support state resolution for transitions
-        String to; // name of the next state, as its instance might not have been compiled yet
-        Sensor trigger;
-        SIGNAL value;
+    private class TransitionBinding {
+        String to;
+        SIGNAL signal;
+        Sensor sensor;
     }
 
     private State currentState = null;
@@ -56,14 +55,18 @@ public class ModelBuilder extends ArduinomlBaseListener {
         theApp = new App();
     }
 
-    @Override public void exitRoot(ArduinomlParser.RootContext ctx) {
+    @Override
+    public void exitRoot(ArduinomlParser.RootContext ctx) {
         // Resolving states in transitions
-        bindings.forEach((key, binding) ->  {
-            SignalTransition t = new SignalTransition();
-            t.setSensor(binding.trigger);
-            t.setValue(binding.value);
-            t.setNext(states.get(binding.to));
-            states.get(key).setTransition(t);
+        bindings.forEach((stateKey, binding) -> {
+            State state = states.get(stateKey);
+            SignalTransition transition = new SignalTransition();
+            if (binding.sensor != null && binding.signal != null) {
+                transition.setSensor(binding.sensor);
+                transition.setValue(binding.signal);
+            }
+            transition.setNext(states.get(binding.to));
+            state.setTransition(transition);
         });
         this.built = true;
     }
@@ -114,13 +117,19 @@ public class ModelBuilder extends ArduinomlBaseListener {
     }
 
     @Override
-    public void enterTransition(ArduinomlParser.TransitionContext ctx) {
-        // Creating a placeholder as the next state might not have been compiled yet.
-        Binding toBeResolvedLater = new Binding();
-        toBeResolvedLater.to      = ctx.next.getText();
-        toBeResolvedLater.trigger = sensors.get(ctx.trigger.getText());
-        toBeResolvedLater.value   = SIGNAL.valueOf(ctx.value.getText());
-        bindings.put(currentState.getName(), toBeResolvedLater);
+    public void exitTransition(ArduinomlParser.TransitionContext ctx) {
+        TransitionBinding binding = new TransitionBinding();
+        binding.to = ctx.next.getText();
+        if (ctx.expr() != null) {
+            ArduinomlParser.AtomContext atom = extractSingleAtom(ctx.expr());
+            if (atom != null) {
+                String sensorName = atom.IDENTIFIER().getText();
+                String signalValue = atom.SIGNAL().getText();
+                binding.sensor = sensors.get(sensorName);
+                binding.signal = SIGNAL.valueOf(signalValue);
+            }
+        }
+        bindings.put(currentState.getName(), binding);
     }
 
     @Override
@@ -128,5 +137,14 @@ public class ModelBuilder extends ArduinomlBaseListener {
         this.theApp.setInitial(this.currentState);
     }
 
+    private ArduinomlParser.AtomContext extractSingleAtom(ArduinomlParser.ExprContext expr) {
+        if (expr == null) return null;
+        ArduinomlParser.OrExprContext orExpr = expr.orExpr();
+        if (orExpr == null || orExpr.andExpr().isEmpty()) return null;
+        
+        ArduinomlParser.AndExprContext andExpr = orExpr.andExpr(0);
+        if (andExpr == null || andExpr.atom().isEmpty()) return null;
+        
+        return andExpr.atom(0);
+    }
 }
-
