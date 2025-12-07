@@ -151,6 +151,7 @@ abstract class GroovuinoMLBasescript extends Script {
                     ]
                 }
         ]
+    }
 
     // export name
     def export(String name) {
